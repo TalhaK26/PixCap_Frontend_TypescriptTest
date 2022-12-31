@@ -1,5 +1,6 @@
 // Added empty export{} to reomve this error: Cannot redeclare block-scoped variable 'ceo'.ts(2451)
 export {};
+import { updateSubOrdinates } from "./helpers";
 
 //Employee Interface
 interface Employee {
@@ -93,12 +94,12 @@ const ceo: Employee = {
   ],
 };
 
-//Concrete Class of EmployeeOrgApp
+// Concrete Class of EmployeeOrgApp
 class EmployeeOrgApp {
   ceoObj: Employee;
   prevStateCeo: Employee;
 
-  //Concrete Class Constructor
+  // Concrete Class Constructor
   constructor(obj: Employee) {
     this.ceoObj = obj;
     this.prevStateCeo = JSON.parse(JSON.stringify(this.ceoObj));
@@ -113,30 +114,52 @@ class EmployeeOrgApp {
 
     this.ceoObj.subordinates.forEach(async (item, index) => {
       await item.subordinates.forEach((emp, ind) => {
+        // Find Employee and its subordinates
         if (emp.uniqueId === employeeID) {
           empObject = { ...emp, subordinates: [] };
-          empIndex = ind;
           empSubordinates = [...emp.subordinates];
+          empIndex = ind;
           empSubordinateIndex = index;
+        } else {
+          emp.subordinates.forEach((e, i) => {
+            if (e.uniqueId === employeeID) {
+              empObject = { ...e, subordinates: [] };
+              empSubordinates = [...e.subordinates];
+              empIndex = i;
+              empSubordinateIndex = ind;
+            }
+
+            // Update Parent of Subordinates
+            if (empIndex > -1 && empSubordinateIndex === ind) {
+              emp.subordinates = updateSubOrdinates(
+                emp.subordinates,
+                empSubordinates,
+                empIndex
+              );
+            }
+          });
         }
       });
 
+      // Move Employee to New Supervisor
       if (item.uniqueId === supervisorID) {
         if (empObject) {
           item.subordinates.push(empObject);
         }
       }
 
+      // Update Grand Parent of Subordinates
       if (empIndex > -1 && empSubordinateIndex === index) {
-        const filteredSubordinates = item.subordinates.filter(
-          (x, i) => i !== empIndex
+        item.subordinates = updateSubOrdinates(
+          item.subordinates,
+          empSubordinates,
+          empIndex
         );
-        item.subordinates = [...filteredSubordinates, ...empSubordinates];
       }
     });
 
     console.log(
-      "Cassandra is moved to a new supervisor (Bruce Willis): ",
+      "Harry Tobs moved to a new supervisor (Bruce Willis) ",
       this.ceoObj
     );
   };
@@ -157,7 +180,7 @@ const app = new EmployeeOrgApp(ceo);
 
 // Calling undo method
 // First param should be Supervisor Id and Second param should be Employee Id
-app.move(331, 112);
+app.move(331, 222);
 
 // Calling undo method
 app.undo();
